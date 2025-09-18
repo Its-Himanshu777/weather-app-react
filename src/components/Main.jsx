@@ -13,12 +13,24 @@ import Visibility from "./Visibility";
 import AirQuality from "./AirQuality";
 
 const Main = () => {
-  const api_key = "e17e45cfaaf44e7a89cbb5506d6cd81a"; // 1500 calls/day
+  // Replace with your OpenWeatherMap API key
+  const api_key = "YOUR_OPENWEATHERMAP_API_KEY";
 
   const [wdata, setWdata] = useState({
     weather: {
       description: "",
+      icon: "",
     },
+    temp: 0,
+    rh: 0,
+    wind_spd: 0,
+    sunrise: "",
+    sunset: "",
+    vis: 0,
+    aqi: 0,
+    lat: 0,
+    lon: 0,
+    uv: 0,
   });
   const [search, setSearch] = useState("Mumbai");
   const [clickName, setClickName] = useState("cel");
@@ -26,14 +38,35 @@ const Main = () => {
   const [fahbtnactive, setFahBtnActive] = useState(false);
 
   const fetchAPI = async () => {
-    const response = await fetch(
-      `https://api.weatherbit.io/v2.0/current?&city=${search}&key=${api_key}`
-    );
-    const result = await response.json();
-    const data = result.data[0];
-    setWdata(data);
-
-    // console.log(data);
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${search}&appid=${api_key}&units=metric`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch weather data");
+      }
+      const result = await response.json();
+      // Map OpenWeatherMap data to the structure expected by child components
+      setWdata({
+        weather: {
+          description: result.weather && result.weather[0] ? result.weather[0].description : "",
+          icon: result.weather && result.weather[0] ? result.weather[0].icon : "",
+        },
+        temp: result.main ? result.main.temp : 0,
+        rh: result.main ? result.main.humidity : 0,
+        wind_spd: result.wind ? result.wind.speed : 0,
+        sunrise: result.sys ? new Date(result.sys.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+        sunset: result.sys ? new Date(result.sys.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+        vis: result.visibility ? (result.visibility / 1000) : 0,
+        aqi: result.main && result.main.aqi ? result.main.aqi : 0, // OpenWeatherMap's free API does not provide AQI directly
+        lat: result.coord ? result.coord.lat : 0,
+        lon: result.coord ? result.coord.lon : 0,
+        uv: 0, // OpenWeatherMap's free API does not provide UV index directly
+      });
+    } catch (error) {
+      console.error("Weather API error:", error);
+      setWdata({ weather: { description: "API Error" } });
+    }
   };
 
   useEffect(() => {
