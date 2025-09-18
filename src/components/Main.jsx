@@ -31,6 +31,7 @@ const Main = () => {
     lat: 0,
     lon: 0,
     uv: 0,
+    error: ""
   });
   const [search, setSearch] = useState("Mumbai");
   const [clickName, setClickName] = useState("cel");
@@ -42,11 +43,11 @@ const Main = () => {
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${search}&appid=${api_key}&units=metric`
       );
-      if (!response.ok) {
-        throw new Error("Failed to fetch weather data");
-      }
       const result = await response.json();
-      // Map OpenWeatherMap data to the structure expected by child components
+      if (!response.ok) {
+        setWdata(prev => ({ ...prev, error: result.message || "Failed to fetch weather data", weather: { description: "API Error" } }));
+        return;
+      }
       setWdata({
         weather: {
           description: result.weather && result.weather[0] ? result.weather[0].description : "",
@@ -58,14 +59,15 @@ const Main = () => {
         sunrise: result.sys ? new Date(result.sys.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
         sunset: result.sys ? new Date(result.sys.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
         vis: result.visibility ? (result.visibility / 1000) : 0,
-        aqi: result.main && result.main.aqi ? result.main.aqi : 0, // OpenWeatherMap's free API does not provide AQI directly
+        aqi: result.main && result.main.aqi ? result.main.aqi : 0,
         lat: result.coord ? result.coord.lat : 0,
         lon: result.coord ? result.coord.lon : 0,
-        uv: 0, // OpenWeatherMap's free API does not provide UV index directly
+        uv: 0,
+        error: ""
       });
     } catch (error) {
       console.error("Weather API error:", error);
-      setWdata({ weather: { description: "API Error" } });
+      setWdata(prev => ({ ...prev, error: error.message || "Unknown error", weather: { description: "API Error" } }));
     }
   };
 
